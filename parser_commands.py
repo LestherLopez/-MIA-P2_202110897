@@ -109,10 +109,6 @@ def p_parameter_mkdisk(t):
         unit_option = t[4]
 
         
-#COMANDO PAUSE
-def p_command_pause(t):
-    '''command_pause : PAUSE'''
-    pause_command()
 
 #---------------------COMANDO RMDISK--------------------- (2)
 def p_command_rmdisk(t):
