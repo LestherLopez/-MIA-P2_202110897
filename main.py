@@ -31,7 +31,7 @@ def get_first_word():
             parse(command)
             word = command.split()
             
-            message += f'[Success] => comando {word[0]} ejecutado exitosamente\n'
+            message += f'[Success] => Comando {word[0]} ejecutado exitosamente\n'
 
     
     else:
