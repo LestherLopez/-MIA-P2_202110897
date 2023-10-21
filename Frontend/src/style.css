@@ -1,0 +1,16 @@
+/* styles.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black; /* Establece el color de fondo en negro */
+    color: white; /* Establece el color del texto en blanco */
+    font-family: 'Arial', sans-serif; /* Cambia la fuente del texto si lo deseas */
+  }
+  
+  #root {
+    height: 100vh; /* Asegura que el contenedor principal ocupe el 100% de la altura de la ventana */
+    display: flex;
+    flex-direction: column;
+  }
+  
