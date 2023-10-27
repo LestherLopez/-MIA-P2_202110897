@@ -3,7 +3,7 @@ import struct
 from classes.Disk_Classes import *
 from utils.Utils import *
 from classes.State import estado
-def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk, type_optionfdisk, fit_optionfdisk, deleteoption):
+def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk, type_optionfdisk, fit_optionfdisk):
     #verificar existencia de fdisk
     print("---------------------------------------")
     print("Comando FDISK en ejecucion con los siguientes parametros:")
@@ -13,7 +13,7 @@ def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk,
     print(f"Path: {path_option_wc}")
     print(f"Type: {type_optionfdisk}")
     print(f"Name: {name_option_wc}")
-    print(f"Delete: {deleteoption}")
+
     ruta_expandida = getPath(path_option_wc)
    
     if os.path.isfile(str(ruta_expandida)):
@@ -33,116 +33,49 @@ def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk,
             dsk_fit = mbr_unpacked[3].decode('utf-8')
             partitions = getPartitions(mbr_unpacked)
             
-            #verificar si es eliminar si no entonces continuar al agregado de particiones
-            if str(deleteoption)=="full":
-                #eliminar particion
-                #recorrer particiones
+         
+                
+            #verificar si ya hay 4 partitions
+            if str(type_optionfdisk)!="L":
+                contador = 0
                 for i in range(0,4):
-                    name = getString16(partitions[i].part_name)
-                    if(partitions[i].part_type=='P'):
-                        if name==str(name_option_wc):
-                            partitions[i].part_status = "0"
-                            partitions[i].part_type = "0"
-                            partitions[i].part_fit ="0"
-                            partitions[i].part_start = 0
-                            partitions[i].part_s = 0
-                            partitions[i].part_name = "0000000000000000"
-                            print("¡Particion Primaria eliminada con exito!")
-                            estado.mensaje = "¡Particion Primaria eliminada con exito!"
-                            break
-                    elif(partitions[i].part_type=='E'):
-              
-                        if name==str(name_option_wc):
-                            partitions[i].part_status = "0"
-                            partitions[i].part_type = "0"
-                            partitions[i].part_fit ="0"
-                            partitions[i].part_start = 0
-                            partitions[i].part_s = 0
-                            partitions[i].part_name = "0000000000000000"
-                            print("¡Particion Extendida eliminada con exito!")
-                            estado.mensaje = "¡Particion Extendida eliminada con exito!"
-                            break
+                    if partitions[i].part_name == "0000000000000000":
+                        continue
+                    else:
+                        contador +=1 
+                if contador == 4:
+                    print("ERROR: El disco ya contiene 4 particiones")
+                    estado.mensaje = "ERROR: El disco ya contiene 4 particiones"
+                    return
+                
+    #       if(dsk_fit=="F"):
             
-                        #revisar en las logicas de la extendida    
-                        else:
-                        
-                            condicion = True
-                            init = partitions[i].part_start
-                            while condicion:
-                                file.seek(init)
-                                ebr_infosize = file.read(struct.calcsize('c c I I i 16s'))
-                                ebr_unpacked = struct.unpack('c c I I i 16s', ebr_infosize)
-                                ebr_status =  ebr_unpacked[0].decode('utf-8')
-                                ebr_fit = ebr_unpacked[1].decode('utf-8')
-                                ebr_start = ebr_unpacked[2]
-                                ebr_s = ebr_unpacked[3]
-                                ebr_next = ebr_unpacked[4]
-                                ebr_name = ebr_unpacked[5].decode('utf-8')
-                                name = getString16(ebr_name)
-                           
-                                if (name==str(name_option_wc)):
-                             
-                                    with open(str(ruta_expandida), "rb+") as filea:
-                                        #sumar al next del logic anterior el size del ebr a borrar
-                                        
-                                        filea.seek(partitions[i].part_start)
-                                        
-                                        ebr_infosizea = filea.read(struct.calcsize('c c I I i 16s'))
-                                     
-                                        ebr_unpackeda = struct.unpack('c c I I i 16s', ebr_infosizea)
-                                     
-                                        ebr_statusa =  ebr_unpackeda[0].decode('utf-8')
-                                     
-                                        ebr_fita = ebr_unpackeda[1].decode('utf-8')
-                                     
-                                        ebr_starta = ebr_unpackeda[2]
-                                   
-                                        ebr_sa = ebr_unpackeda[3]
-                                      
-                                        ebr_nexta = ebr_unpackeda[4]
-                                      
-                                        ebr_namea = ebr_unpackeda[5].decode('utf-8')
-
-                                       
-                                        current_ebr = EBR("1", ebr_fita, ebr_starta, ebr_sa, ebr_nexta+ebr_s, ebr_namea)
-                                        current_ebrpack = current_ebr.pack()
-                                       
-                                        filea.write(current_ebrpack)
-                                       
-
-
-                                        #borrar
-                                        filea.seek(init)
-                                      
-                                        filea.write(b'\x00' * int(struct.calcsize('c c I I i 16s')))
-                                        print("¡Particion Logica eliminada con exito!")
-                                        estado.mensaje = "¡Particion Logica eliminada con exito!"
-                                    condicion = False  
-                                else: 
-                                    #actualizar el init por el ebr_next
-                                    init = ebr_next
-                            return
-            # su no es eliminar entonces es crear normal
-            else:
+            if(str(type_optionfdisk)=="P" ):
                 
-                #verificar si ya hay 4 partitions
-                if str(type_optionfdisk)!="L":
-                    contador = 0
-                    for i in range(0,4):
-                        if partitions[i].part_name == "0000000000000000":
-                            continue
-                        else:
-                            contador +=1 
-                    if contador == 4:
-                        print("ERROR: El disco ya contiene 4 particiones")
-                        estado.mensaje = "ERROR: El disco ya contiene 4 particiones"
-                        return
-                    
-        #       if(dsk_fit=="F"):
                 
-                if(str(type_optionfdisk)=="P" ):
+                for i in range(0,4):
+                    #verificar el primer vacio 
+                    if partitions[i].part_name == "0000000000000000" and partitions[i].part_status == "0":
+                        #prmario y first fit
                     
+                        #EBR VA CON VALORES NULOS MENOS NEXT ESE VA CON -1
                     
+
+                        sizepart_bytes = getSize_bytes(size_option, unit_optionfdisk)
+                        fitOP = getfit_mbr(str(fit_optionfdisk))
+                        start_number = getStartpart(partitions[i-1].part_start, partitions[i-1].part_s)
+                        partitions[i].part_status = "1"
+                        partitions[i].part_type = type_optionfdisk
+                        partitions[i].part_fit =fitOP
+                        partitions[i].part_start = start_number
+                        partitions[i].part_s = sizepart_bytes
+                        partitions[i].part_name = str(name_option_wc)
+                        #crear ebr si es extendida
+
+                        break
+            elif(str(type_optionfdisk)=="E"):      
+                value = verificar_extendidas(partitions)
+                if value:
                     for i in range(0,4):
                         #verificar el primer vacio 
                         if partitions[i].part_name == "0000000000000000" and partitions[i].part_status == "0":
@@ -153,7 +86,7 @@ def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk,
 
                             sizepart_bytes = getSize_bytes(size_option, unit_optionfdisk)
                             fitOP = getfit_mbr(str(fit_optionfdisk))
-                            start_number = getStartpart(partitions[i-1].part_start, partitions[i-1].part_s)
+                            start_number = getStartpart(partitions[i-1].part_start, sizepart_bytes)
                             partitions[i].part_status = "1"
                             partitions[i].part_type = type_optionfdisk
                             partitions[i].part_fit =fitOP
@@ -163,55 +96,32 @@ def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk,
                             #crear ebr si es extendida
 
                             break
-                elif(str(type_optionfdisk)=="E"):      
-                    value = verificar_extendidas(partitions)
-                    if value:
-                        for i in range(0,4):
-                            #verificar el primer vacio 
-                            if partitions[i].part_name == "0000000000000000" and partitions[i].part_status == "0":
-                                #prmario y first fit
-                            
-                                #EBR VA CON VALORES NULOS MENOS NEXT ESE VA CON -1
-                            
-
-                                sizepart_bytes = getSize_bytes(size_option, unit_optionfdisk)
-                                fitOP = getfit_mbr(str(fit_optionfdisk))
-                                start_number = getStartpart(partitions[i-1].part_start, sizepart_bytes)
-                                partitions[i].part_status = "1"
-                                partitions[i].part_type = type_optionfdisk
-                                partitions[i].part_fit =fitOP
-                                partitions[i].part_start = start_number
-                                partitions[i].part_s = sizepart_bytes
-                                partitions[i].part_name = str(name_option_wc)
-                                #crear ebr si es extendida
-
-                                break
-                    else:
-                        print("ERROR: El disco no puede contener mas de una particion extendida")
-                        estado.mensaje  = "ERROR: El disco no puede contener mas de una particion extendida"
+                else:
+                    print("ERROR: El disco no puede contener mas de una particion extendida")
+                    estado.mensaje  = "ERROR: El disco no puede contener mas de una particion extendida"
+                    print("---------------------------------------")
+                    return
+            elif(str(type_optionfdisk)=="L"):
+            
+                sizepart_bytes = getSize_bytes(size_option, unit_optionfdisk)
+                existeExtendida =  False
+                fitOP = getfit_mbr(str(fit_optionfdisk))
+                for i in range(0,4):
+                    
+                    if(partitions[i].part_type=='E'):
+                        existeExtendida = True
+                
+                        break
+                        
+                if existeExtendida:
+                    
+                        createLogic(partitions, str(ruta_expandida), fitOP, sizepart_bytes, str(name_option_wc))
+                else:
+                        print("ERROR: No es posible crear una particion logica sin particiones extendidas");
+                        estado.mensaje = "ERROR: No es posible crear una particion logica sin particiones extendidas"
                         print("---------------------------------------")
                         return
-                elif(str(type_optionfdisk)=="L"):
-                
-                    sizepart_bytes = getSize_bytes(size_option, unit_optionfdisk)
-                    existeExtendida =  False
-                    fitOP = getfit_mbr(str(fit_optionfdisk))
-                    for i in range(0,4):
-                        
-                        if(partitions[i].part_type=='E'):
-                            existeExtendida = True
-                    
-                            break
-                            
-                    if existeExtendida:
-                        
-                            createLogic(partitions, str(ruta_expandida), fitOP, sizepart_bytes, str(name_option_wc))
-                    else:
-                            print("ERROR: No es posible crear una particion logica sin particiones extendidas");
-                            estado.mensaje = "ERROR: No es posible crear una particion logica sin particiones extendidas"
-                            print("---------------------------------------")
-                            return
-                    return
+                return
 
                     
             """"   

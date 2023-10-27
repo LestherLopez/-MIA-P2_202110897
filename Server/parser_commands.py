@@ -128,10 +128,10 @@ def p_command_rmdisk(t):
 unit_optionfdisk = 'K'
 type_optionfdisk = 'P'
 fit_optionfdisk = 'WF'
-delete_optionfdisk = None
+
 def p_command_fdisk(t):
     '''command_fdisk : FDISK parameters_fdisk'''
-    global size_option, unit_optionfdisk, fit_optionfdisk, path_option, type_optionfdisk, name_option, delete_optionfdisk
+    global size_option, unit_optionfdisk, fit_optionfdisk, path_option, type_optionfdisk, name_option
     if(path_option==None):
         print("ERROR: El parametro path es obligatorio")
         estado.mensaje = "ERROR: El parametro path es obligatorio"
@@ -141,11 +141,11 @@ def p_command_fdisk(t):
     else:
         path_option_wc = remove_comillas(path_option)
         name_option_wc = remove_comillas(name_option)
-        fdisk_command(size_option, path_option_wc, str(name_option_wc), unit_optionfdisk, type_optionfdisk, fit_optionfdisk, delete_optionfdisk)
+        fdisk_command(size_option, path_option_wc, str(name_option_wc), unit_optionfdisk, type_optionfdisk, fit_optionfdisk)
     unit_optionfdisk = 'K'
     type_optionfdisk = 'P'
     fit_optionfdisk = 'WF'
-    delete_optionfdisk = None
+ 
     size_option = None
     path_option = None
     name_option = None
@@ -158,10 +158,8 @@ def p_parameter_fdisk(t):
                       | GUION NAME IGUAL ID
                       | GUION UNIT IGUAL unit_options
                       | GUION TYPE IGUAL type_options
-                      | GUION FIT IGUAL fit_options
-                      | GUION DELETE IGUAL FULL
-                      | GUION ADD IGUAL ENTERO'''
-    global size_option, unit_optionfdisk, fit_optionfdisk, path_option, type_optionfdisk, name_option, delete_optionfdisk
+                      | GUION FIT IGUAL fit_options'''
+    global size_option, unit_optionfdisk, fit_optionfdisk, path_option, type_optionfdisk, name_option
     if t[2] == 'size':
         #print(t[4])
         size_option = t[4]
@@ -175,8 +173,7 @@ def p_parameter_fdisk(t):
         unit_optionfdisk = t[4]
     elif t[2] == 'type':
         type_optionfdisk = t[4]
-    elif t[2] == 'delete':
-        delete_optionfdisk = t[4]
+
 
 #---------------------COMANDO MOUNT--------------------- (4)
 def p_command_mount(t):
@@ -192,8 +189,7 @@ def p_command_mount(t):
         path_option_moun = remove_comillas(path_option)
         name_option_moun = remove_comillas(name_option)
         mount_command(str(path_option_moun), str(name_option_moun), list_mount_partitions)
-    name_option = None
-    path_option = None
+    
 def p_parameters_mount(t):
     '''parameters_mount : parameter_mount parameters_mount
                         |'''
@@ -271,9 +267,7 @@ def p_command_login(t):
         newsesion_activa = login_command(user_login, pass_login, id_login, list_mount_partitions,sesion_activa, list_users, usuario_logueado)
 
         sesion_activa = newsesion_activa
-    user_login = None
-    pass_login = None
-    id_login = None
+
     
 def p_parameters_login(t):
     '''parameters_login : parameter_login parameters_login

@@ -103,6 +103,7 @@ function Card() {
         color: '#FFFFFF',
         margin: '0px',
         fontSize: '1.1rem',
+       
           
       };
       const header = {
@@ -118,7 +119,7 @@ function Card() {
         lineHeight: '40px', // camelCase en lugar de lineheight
         fontWeight: '600', // camelCase en lugar de fontweight
         backgroundColor: '#242424', // camelCase en lugar de backgroundcolor
-        textAlign: 'center',
+       
       };
   return (
     <div style ={estiloOscuro }lassName="card mt-4">
@@ -149,6 +150,7 @@ function Card() {
                 style={estiloText}
                 value={commands}
                 onChange={(e) => setCommands(e.target.value)}
+                
             ></textarea>
         </div>
 

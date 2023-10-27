@@ -54,7 +54,7 @@ reserved_words = {
     "mkdir":  'MKDIR',
     "cont": 'CONT',
     "r":    'R',
-    "pause": 'PAUSE',
+
     #Valores
 }
 

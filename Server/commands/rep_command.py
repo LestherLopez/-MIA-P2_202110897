@@ -14,19 +14,16 @@ def rep_command(path_option_wc, name_option_wc, id_option_wc, ruta_option, list_
     print(f"Path: {path_option_wc}")
     print(f"Id: {id_option_wc}")
     print(f"Name: {name_option_wc}")
-    
+    # 7 reportes
     report_functions = {
-        "mbr": mbr,
-        "disk": disk,
-        "inode": inode,
-        "journaling": Journaling,
-        "block": block,
-        "bm_inode": bm_inode,
-        "bm_block": bm_block,
-        "tree": tree,
-        "sb": sb,
-        "file": file,
-        "ls": ls
+        "mbr": mbr, #1
+        "disk": disk, #2    
+        "bm_inode": bm_inode, #3
+        "bm_block": bm_block, #4
+        "tree": tree, #6
+        "sb": sb, #5
+        "file": file, #7
+
     }
     
     report_function = report_functions.get(name_option_wc)
@@ -328,320 +325,11 @@ def disk(path_option, id_option_wc, ruta_option, list_mount):
     print("¡Reporte disk creado con exito!")
     print("---------------------------------------")
 
-def inode(path_option, id_option_wc, ruta_option, list_mount):
-    print("generacion de reporte inode...")
-    #buscar el disk por medio del id
-    path_disk = None
-    Found = False
-    start_partition = None
-    size_partition  = None
-    for partition in list_mount:
-        if id_option_wc == partition["id"]:
-            start_partition = partition["start"]
-            size_partition = partition["size"]
-            path_disk=str(partition["path"])
-            Found=True
-    
-    if(Found==False):
-       print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
-       return
-    
-    with open(str(path_disk), "rb") as file:
-        ruta_expandida = path_disk
-
-        if os.path.isfile(str(ruta_expandida)):
-            file.seek(int(start_partition))
-            superblock_infosize =  file.read(struct.calcsize("I I I I I Q Q I I I I I I I I I I"))
-            superblock_unpacked = struct.unpack("I I I I I Q Q I I I I I I I I I I", superblock_infosize)
-            
-            # Obtener los valores desempaquetados del superbloque
-            s_filesystem_type = superblock_unpacked[0]
-            s_inodes_count = superblock_unpacked[1]
-            s_blocks_count = superblock_unpacked[2]
-            s_free_blocks_count = superblock_unpacked[3]
-            s_free_inodes_count = superblock_unpacked[4]
-            s_mtime = superblock_unpacked[5]
-            s_umtime = superblock_unpacked[6]
-            s_mnt_count = superblock_unpacked[7]
-            s_magic = superblock_unpacked[8]
-            s_inode_s= superblock_unpacked[9]
-            s_block_s=superblock_unpacked[10]
-            s_first_ino = superblock_unpacked[11]
-            s_first_blo = superblock_unpacked[12]
-            s_bm_inode_start = superblock_unpacked[13]
-            s_bm_block_start = superblock_unpacked[14]
-            s_inode_start = superblock_unpacked[15]
-            s_block_start = superblock_unpacked[16]
-            inodos_utilizados = []
-            for i in range(0, s_inodes_count):
-                file.seek(s_bm_inode_start+start_partition+(i))
-                superblock_infosize =  file.read(1)
-                if superblock_infosize[0]==49:
-                    inodos_utilizados.append(i)
-            text = 'digraph { \n'
-            text += '''rankdir=LR;\n
-            node [shape=plaintext];\n'''
-        
-            for i in range(0,len(inodos_utilizados)):
-                file.seek(int(s_inode_start+start_partition+(getSizeTableInodes()*inodos_utilizados[i])))
-                inodoinicial_infosize =  file.read(struct.calcsize('I I I Q Q Q 15i c I'))
-                inodoinicial_unpacked = struct.unpack('I I I Q Q Q 15i c I', inodoinicial_infosize)
-                i_uid = inodoinicial_unpacked[0] #a
-                i_gid = inodoinicial_unpacked[1]#a
-                i_s = inodoinicial_unpacked[2] #a
-                #atime
-                if str(int(inodoinicial_unpacked[3]))!="0":
-                    i_atime = datetime.strptime(str(int(inodoinicial_unpacked[3])), "%d%m%Y%H%M")
-                else:
-                    i_atime =inodoinicial_unpacked[3]
-                #ctime
-                if str(int(inodoinicial_unpacked[4]))!="0":
-                    i_ctime = datetime.strptime(str(int(inodoinicial_unpacked[4])), "%d%m%Y%H%M")
-                else:
-                    i_ctime =inodoinicial_unpacked[4]
-                #mtime
-                if str(int(inodoinicial_unpacked[5]))!="0":
-                    i_mtime = datetime.strptime(str(int(inodoinicial_unpacked[5])), "%d%m%Y%H%M")
-                else:
-                    i_mtime =inodoinicial_unpacked[5]
-            
-                i_block = []
-                for j in range (6,21):
-                    i_block.append(int(inodoinicial_unpacked[j]))
-            
-                i_type = inodoinicial_unpacked[21].decode('utf-8')
-                i_perm = inodoinicial_unpacked[22]
-                text += "Inodo{}".format(inodos_utilizados[i])
-                text += '''[label=<<TABLE BORDER='2' CELLBORDER='0' CELLSPACING='5' BGCOLOR='white'>\n
-                        <TR><TD colspan='2' ><b>Inodo {}</b></TD></TR>\n
-                        <TR><TD Align='left'>i_uid</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_gid</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>size</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_atime</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_ctime</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_mtime</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_type</TD><TD>{}</TD></TR>\n
-                        <TR><TD Align='left'>i_perm</TD><TD>{}</TD></TR>\n
-                        '''.format(i, i_uid, i_gid, i_s, i_atime, i_ctime, i_mtime, i_type, i_perm)
-                num = 1
-                for i in i_block:
-                    
-                    text += '''<TR><TD Align='left'>i_perm{}</TD><TD>{}</TD></TR>\n'''.format(num,i)
-                    num +=1
-                text += '''</TABLE>>];\n'''
-
-            for i in range(0, len(inodos_utilizados)):
-                if i==len(inodos_utilizados)-1:
-                    text += "Inodo{}".format(i)
-                else:
-                    text += "Inodo{} ->".format(i)
-                
-            file.close() 
-    text += "}"
-    #hacer contrario
-    f = open('reporteinode.dot', 'w', encoding="utf-8")
-    #acceder a superblock
-    f.write(text)
-    f.close()
-    
-    subprocess.run(["dot", "-Tpdf", 'reporteinode.dot', "-o", path_option])
-    print("¡Reporte de inodos generado con exito!")
-          
-
-def Journaling(path_option, id_option_wc, ruta_option, list_mount):
-    print("generacion de reporte journaling...")
-    #buscar el disk por medio del id
-    path_disk = None
-    Found = False
-    start_partition = None
-    size_partition  = None
-    for partition in list_mount:
-        if id_option_wc == partition["id"]:
-            start_partition = partition["start"]
-            size_partition = partition["size"]
-            path_disk=str(partition["path"])
-            Found=True
-    
-    if(Found==False):
-       print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
-       return
-    
-    with open(str(path_disk), "rb") as file:
-        ruta_expandida = path_disk
-        if os.path.isfile(str(ruta_expandida)):
-            file.seek(int(start_partition))
-            superblock_infosize =  file.read(struct.calcsize("I I I I I Q Q I I I I I I I I I I"))
-            superblock_unpacked = struct.unpack("I I I I I Q Q I I I I I I I I I I", superblock_infosize)
-            mi_clase = MiClasePrincipal()
-
-     
-            # Obtener los valores desempaquetados del superbloque
-            s_filesystem_type = superblock_unpacked[0]
-            s_inodes_count = superblock_unpacked[1]
-            s_blocks_count = superblock_unpacked[2]
-            s_free_blocks_count = superblock_unpacked[3]
-            s_free_inodes_count = superblock_unpacked[4]
-            s_mtime = superblock_unpacked[5]
-            s_umtime = superblock_unpacked[6]
-            s_mnt_count = superblock_unpacked[7]
-            s_magic = superblock_unpacked[8]
-            s_inode_s= superblock_unpacked[9]
-            s_block_s=superblock_unpacked[10]
-            s_first_ino = superblock_unpacked[11]
-            s_first_blo = superblock_unpacked[12]
-            s_bm_inode_start = superblock_unpacked[13]
-            s_bm_block_start = superblock_unpacked[14]
-            s_inode_start = superblock_unpacked[15]
-            s_block_start = superblock_unpacked[16]
-            if s_filesystem_type == 3:
-                text = 'digraph { \n'
-                text += '''graph [rankdir=LR];\n
-                node [shape=plaintext];\n
-
-                table [\n
-                    label=<<TABLE BORDER="1"  CELLSPACING="0">\n
-                        <TR><TD BGCOLOR="white"><FONT COLOR="black">Operacion</FONT></TD><TD BGCOLOR="white"><FONT COLOR="black">Path</FONT></TD><TD BGCOLOR="white"><FONT COLOR="black">Contenido</FONT></TD><TD BGCOLOR="white"><FONT COLOR="black">Fecha</FONT></TD></TR>\n
-                      
-                        '''
-                
-                # Imprimir los objetos en la lista
-                for objeto in list_journaling:
-                    tiempoyhora = datetime.strptime(str(int(objeto.datetime)), "%d%m%Y%H%M")
-                    text += '''<TR><TD>{}</TD><TD>{}</TD><TD>{}</TD><TD>{}</TD></TR>\n'''.format(objeto.command, objeto.path, objeto.content, tiempoyhora)
-                text += '''</TABLE>>];}\n'''
-
-                f = open('reportejournaling.dot', 'w', encoding="utf-8")
-                f.write(text)
-                f.close()
-                
-        
-                subprocess.run(["dot", "-Tpdf", 'reportejournaling.dot', "-o", path_option])
-                print("¡Reporte journaling generado con exito!")
-            else:
-                print("No es posible generar el reporte de Journaling con EXT2")
 
 #1 bloque archivo
 #2 bloque de apuntador
 #3 bloque de carpeta
-def block(path_option, id_option_wc, ruta_option, list_mount):   
-    print("generacion de reporte block...")
-    #buscar el disk por medio del id
-    path_disk = None
-    Found = False
-    start_partition = None
-    size_partition  = None
-    for partition in list_mount:
-        if id_option_wc == partition["id"]:
-            start_partition = partition["start"]
-            size_partition = partition["size"]
-            path_disk=str(partition["path"])
-            Found=True
-    
-    if(Found==False):
-       print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
-       return
-    
-    with open(str(path_disk), "rb") as file:
-        ruta_expandida = path_disk
-        if os.path.isfile(str(ruta_expandida)):
-            file.seek(int(start_partition))
-            superblock_infosize =  file.read(struct.calcsize("I I I I I Q Q I I I I I I I I I I"))
-            superblock_unpacked = struct.unpack("I I I I I Q Q I I I I I I I I I I", superblock_infosize)
-            
-            # Obtener los valores desempaquetados del superbloque
-            s_filesystem_type = superblock_unpacked[0]
-            s_inodes_count = superblock_unpacked[1]
-            s_blocks_count = superblock_unpacked[2]
-            s_free_blocks_count = superblock_unpacked[3]
-            s_free_inodes_count = superblock_unpacked[4]
-            s_mtime = superblock_unpacked[5]
-            s_umtime = superblock_unpacked[6]
-            s_mnt_count = superblock_unpacked[7]
-            s_magic = superblock_unpacked[8]
-            s_inode_s= superblock_unpacked[9]
-            s_block_s=superblock_unpacked[10]
-            s_first_ino = superblock_unpacked[11]
-            s_first_blo = superblock_unpacked[12]
-            s_bm_inode_start = superblock_unpacked[13]
-            s_bm_block_start = superblock_unpacked[14]
-            s_inode_start = superblock_unpacked[15]
-            s_block_start = superblock_unpacked[16]
-            bloques_utilizados = []
-            tipo_bloque = []
 
-            for i in range(0, s_blocks_count):
-                file.seek(s_bm_block_start+start_partition+(i))
-                superblock_infosize =  file.read(1)
-                if superblock_infosize[0]==49 or superblock_infosize[0]==50 or superblock_infosize[0]==51:
-                    
-                    bloques_utilizados.append(i)
-                    tipo_bloque.append(superblock_infosize[0])
-            text = 'digraph { \n'
-            text += '''rankdir=LR;\n
-            node [shape=plaintext];\n'''
-       
-            for i in range(0,len(bloques_utilizados)):
-                file.seek(int(s_block_start+start_partition+(64*bloques_utilizados[i])))
-                
-                #bloque de archivos
-                if(tipo_bloque[i]==49):
-                    bloquearchivo_infosize =  file.read(struct.calcsize("64s"))
-                    archivoblock = struct.unpack("64s", bloquearchivo_infosize)
-                    texto_desempaqeutado = archivoblock[0].decode('utf-8')
-                    modify = str(texto_desempaqeutado)
-                    cadena = ""
-                    line=modify.split("\n")
-                    for elemento in line:
-                            if not elemento.startswith('\x00'):
-                                cadena += str(elemento)+"\n"
-                    text += "Bloque{}".format(bloques_utilizados[i])
-                    text += "[label = <<TABLE BORDER='2' CELLBORDER='0' CELLSPACING='5' BGCOLOR='white'>\n"
-                    text += "<TR><TD><b>Bloque archivo {}</b></TD></TR>\n".format(bloques_utilizados[i])
-                    text += "<TR><TD>{}</TD></TR>".format(cadena)
-                    text += "</TABLE>>];\n"
-                elif(tipo_bloque[i]==50):
-                    bloqueapuntador_infosize = file.read(struct.calcsize("16i"))
-                    apuntadorblock = struct.unpack("16i", bloqueapuntador_infosize)
-                    apuntadores_desempaquetado = []
-                    for z in range(0,16):
-                        apuntadores_desempaquetado.append(apuntadorblock[z])
-                    cadena_numeros  = ""
-                    for j in range(0,16):
-                        cadena_numeros = str(apuntadores_desempaquetado[j]+",")
-                    text += "Bloque{}".format(bloques_utilizados[i])
-                    text += "[label = <<TABLE BORDER='2' CELLBORDER='0' CELLSPACING='5' BGCOLOR='white'>\n"
-                    text += "<TR><TD><b>Bloque apuntadores {}</b></TD></TR>\n".format(bloques_utilizados[i])
-                    text += "<TR><TD>{}</TD></TR>".format(cadena_numeros)
-                    text += "</TABLE>>];\n"
-                elif(tipo_bloque[i]==51):
-                     
-                     bloquecarpeta_infosize =  file.read(struct.calcsize("12s i 12s i 12s i 12s i"))
-                     carpetasblock = CarpetBlock().unpack(bloquecarpeta_infosize)
-                     text += "Bloque{}".format(bloques_utilizados[i])
-                     text += "[label = <<TABLE BORDER='2' CELLBORDER='0' CELLSPACING='5' BGCOLOR='white'>\n"
-                     text += "<TR><TD colspan='2'><b>Bloque carpetas {}</b></TD></TR>\n".format(bloques_utilizados[i])
-                     text += "<TR><TD><b>b_name</b></TD><TD><b>b_inodo</b></TD></TR>\n"
-                     for k in range(0,4):
-                        name_carpetblock = getStringWithDot(str(carpetasblock.b_content[k].b_name))
-                        search_inodo = carpetasblock.b_content[k].b_inodo
-                        text += "<TR><TD>{}</TD><TD>{}</TD></TR>".format(name_carpetblock, search_inodo)
-                     text += "</TABLE>>];\n"
-                     
-            for i in range(0, len(bloques_utilizados)):
-                        if i==len(bloques_utilizados)-1:
-                            text += "Bloque{}".format(i)
-                        else:
-                            text += "Bloque{} ->".format(i)
-    text += "}"
-    #hacer contrario
-    f = open('reporteblock.dot', 'w', encoding="utf-8")
-    #acceder a superblock
-    f.write(text)
-    f.close()
-    
-    subprocess.run(["dot", "-Tpdf", 'reporteblock.dot', "-o", path_option])
-    print("¡Reporte blocks generado con exito!")  
-                
         
 def bm_inode(path_option, id_option_wc, ruta_option, list_mount):
     print("generacion de reporte bitmap de inodos...")
@@ -1074,9 +762,6 @@ def sb(path_option, id_option_wc, ruta_option, list_mount):
    
 def file():
     print("file")
-
-def ls():
-    print("ls")
 
 
 def verify_path(path):

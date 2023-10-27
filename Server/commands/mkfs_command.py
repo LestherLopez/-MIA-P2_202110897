@@ -69,37 +69,8 @@ def mkfs_command(id_option, type_option, fs_option, list_mount, list_users):
             file.write(superblock_Serializado)
             file.close()
     elif(fs_option=='3fs'):
-        print("---Creacion de sistema EXT3---")
-        #Superbloque -> Journaling ->  bitmap inodos -> bitmap bloques -> inodos -> bloques
-        n = (int(partition_size) - superblock_size / (4 + Journalingsize + table_inodes_size + 3 * block_size))
-        numeros_Estructuras = int(math.floor(n))
-        s_filesystem_type = 3
-        #inicializar super bloque
-        s_inodes_count = numeros_Estructuras
-        s_blocks_count = numeros_Estructuras*3
-        s_free_blocks_count = (numeros_Estructuras-2)
-        s_free_inodes_count = (numeros_Estructuras*3-2)
-        s_mtime = int(datetime.now().strftime("%d%m%Y%H%M"))
-        s_umtime = 0
-        s_mnt_count = 1
-        s_magic = 0xEF53
-        s_inode_s = table_inodes_size
-        s_block_s = 64
-        s_first_ino =int(superblock_size+s_inodes_count+s_blocks_count+(2*table_inodes_size)+(Journalingsize)) #inicio de inodos
-        s_first_blo = int(superblock_size+s_inodes_count+s_blocks_count+(s_inodes_count*table_inodes_size)+(2*64)+(Journalingsize))
-        s_bm_inode_start = int(superblock_size+(Journalingsize)) #inicio de bitmap de inodos (partition_Start)
-        s_bm_block_start = int(superblock_size+s_inodes_count+(Journalingsize)) #inicio de bitma bloques
-        s_inode_start = int(s_bm_block_start+s_blocks_count+(Journalingsize)) #inicio de inodos
-        s_block_start = int(s_inode_start+(s_inodes_count*table_inodes_size)+(Journalingsize)) #inicio de bloques
-        superblock = SuperBloque(s_filesystem_type, s_inodes_count, s_blocks_count, s_free_blocks_count, s_free_inodes_count, s_mtime, s_umtime, s_mnt_count, s_magic, s_inode_s, s_block_s, s_first_ino, s_first_blo, s_bm_inode_start, s_bm_block_start, s_inode_start, s_block_start)
-        
-        
-        with open(str(path_dsk), "rb+") as file: 
-            file.seek(int(partition_start))
-            superblock_Serializado = superblock.pack()
-            file.write(superblock_Serializado)
-            file.close()
-
+        estado.mensaje = "ERROR: Unicamente se permite hacer formateo ext2"
+        return
         
     if(n<=0):
         print("ERROR: No existe suficiente espacio en la particion para realizar el formateo")
