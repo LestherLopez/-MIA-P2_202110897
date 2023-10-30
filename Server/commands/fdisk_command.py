@@ -175,7 +175,7 @@ def fdisk_command(size_option, path_option_wc, name_option_wc, unit_optionfdisk,
                 createEBR(ruta_expandida, partitions[i].part_start)
                 
                 break
-            
+        estado.mensaje = "¡Comando fdisk ejecutado con exito!"    
     else:
         print("ERROR: el path del archivo ingresado no existe o el archivo no existe con extension dsk")
         estado.mensaje = "ERROR: el path del archivo ingresado no existe o el archivo no existe con extension dsk"

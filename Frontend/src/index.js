@@ -12,6 +12,17 @@ import Modal from './components/modal';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import Container from 'react-bootstrap/Container';
 import './App.css';
+
+const storedList = localStorage.getItem('miListaGuardada');
+if (storedList) {
+  
+} else {
+  // Si no existe una lista en el localStorage, crea una nueva lista con el elemento
+  const myList = [];
+  localStorage.setItem('miListaGuardada', JSON.stringify(myList));
+}
+
+
 function Home() {
  
 
@@ -70,5 +81,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <RouterProvider router={router} />
   </React.StrictMode>
 );
+
 
 export default router;

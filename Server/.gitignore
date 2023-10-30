@@ -1,3 +1,4 @@
 parser.out
 parsertab.py
 **/_pycache__/**
+.env

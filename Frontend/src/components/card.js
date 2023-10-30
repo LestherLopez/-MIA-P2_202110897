@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Button from 'react-bootstrap/Button';
+import { imageNames } from './imagesNames';
 function Card() {
 
     const [results, setResults] = useState('');
@@ -58,7 +59,23 @@ function Card() {
                     });
             
                     const data = await response.json();
+                    if (data.filename != ""){
+                      const listaJSON = localStorage.getItem('miListaGuardada');
+
+                      // Convertir la cadena JSON en una lista
+                      const miListaRecuperada = JSON.parse(listaJSON);
+
+                      // Agregar elementos a la lista recuperada
+                      miListaRecuperada.push(data.filename);
+
+                      const listaJSONActualizada = JSON.stringify(miListaRecuperada);
+
+                      // Guardar la cadena JSON actualizada en localStorage
+                      localStorage.setItem('miListaGuardada', listaJSONActualizada);
+                    }
                     setResults(prevResults => prevResults + `${data.mensaje}\n`);
+              
+                    console.log(imageNames)
                 } catch (error) {
                     console.error(`Error en la solicitud ${i + 1}: ${error}`);
                 }

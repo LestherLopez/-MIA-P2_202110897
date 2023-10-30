@@ -1,13 +1,19 @@
 from datetime import datetime
 import os
+from dotenv import load_dotenv
 import struct
 from classes.Disk_Classes import *
+from classes.State import *
 from classes.InodeTable import *
 import subprocess
 from classes.Block import *
 from utils.Utils import *
+import boto3
 from classes.Journaling import *
 textTree = ""
+aws_access_key_id = os.getenv('ACCESS_ID')
+aws_secret_access_key = os.getenv('SECRET_ID')
+bucket_name = 'lestherlopez'
 def rep_command(path_option_wc, name_option_wc, id_option_wc, ruta_option, list_mount):
     print("---------------------------------------")
     print("Comando REP en ejecucion con los siguientes parametros:")
@@ -35,6 +41,7 @@ def rep_command(path_option_wc, name_option_wc, id_option_wc, ruta_option, list_
   
         report_function(expanded_route, id_option_wc, ruta_option, list_mount)
     else:
+        estado.mensaje = "ERROR: El nombre de reporte no es valido"
         print("El nombre de reporte no es válido")
 
 def mbr(path_option, id_option_wc, ruta_option, list_mount):
@@ -49,6 +56,7 @@ def mbr(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
+       estado.mensaje = "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
        return
     
@@ -158,9 +166,18 @@ def mbr(path_option, id_option_wc, ruta_option, list_mount):
 
     f.write(text)
     f.close()
+    archivo_jpg = getFileName(path_option)
     
-    
-    subprocess.run(["dot", "-Tjpg", 'reporte.dot', "-o", path_option])
+    subprocess.run(["dot", "-Tjpg", 'reporte.dot', "-o", archivo_jpg])
+
+    s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+  
+
+    # Sube el archivo al bucket
+    s3.upload_file(archivo_jpg, bucket_name, archivo_jpg)
+
+    estado.mensaje = "¡Reporte MBR generado con exito!"
+    estado.reportname = archivo_jpg
     print("¡Reporte MBR generado con exito!")
 def disk(path_option, id_option_wc, ruta_option, list_mount):
 
@@ -175,8 +192,9 @@ def disk(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
-       print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
-       return
+        estado.mensaje = "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
+        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
+        return
     
     with open(str(path_disk), "rb") as file:
         ruta_expandida = path_disk
@@ -320,8 +338,12 @@ def disk(path_option, id_option_wc, ruta_option, list_mount):
     
     f.write(text)
     f.close()
-    
-    subprocess.run(["dot", "-Tjpg", 'reportedsk.dot', "-o", path_option])
+    archivo_jpg = getFileName(path_option)
+    subprocess.run(["dot", "-Tjpg", 'reportedsk.dot', "-o", archivo_jpg])
+    s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+    s3.upload_file(archivo_jpg, bucket_name, archivo_jpg)
+    estado.mensaje = "¡Reporte disk creado con exito!"
+    estado.reportname = archivo_jpg
     print("¡Reporte disk creado con exito!")
     print("---------------------------------------")
 
@@ -346,6 +368,7 @@ def bm_inode(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
+       estado.mensaje = "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
        return
     
@@ -382,10 +405,15 @@ def bm_inode(path_option, id_option_wc, ruta_option, list_mount):
                     text += "1 "
                 elif(superblock_infosize[0]==0):
                     text += "0 "
-            f = open(path_option, 'w', encoding="utf-8")
+            archivo_jpg = getFileName(path_option)
+            f = open(archivo_jpg, 'w', encoding="utf-8")
             #acceder a superblock
             f.write(text)
             f.close()
+            s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+            s3.upload_file(archivo_jpg, bucket_name, archivo_jpg)
+            estado.mensaje = "¡Reporte bitmap inodos generado con exito!"
+            estado.reportname = archivo_jpg
             print("¡Reporte bitmap inodos generado con exito!")
 def bm_block(path_option, id_option_wc, ruta_option, list_mount):
     print("generacion de bitmap de blocks...")
@@ -402,6 +430,7 @@ def bm_block(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
+       estado.mensaje = "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
        return
     
@@ -438,10 +467,19 @@ def bm_block(path_option, id_option_wc, ruta_option, list_mount):
                     text += "1 "
                 elif(superblock_infosize[0]==0):
                     text += "0 "
-            f = open(path_option, 'w', encoding="utf-8")
+            archivo_jpg = getFileName(path_option)
+            print(archivo_jpg)
+            f = open(archivo_jpg, 'w', encoding="utf-8")
             #acceder a superblock
             f.write(text)
             f.close()
+            s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+
+            # Sube el archivo al bucket
+            s3.upload_file(archivo_jpg, bucket_name, archivo_jpg)
+            estado.mensaje = "¡Reporte bitmap blocks generado con exito!"
+            estado.reportname = archivo_jpg
+
             print("¡Reporte bitmap blocks generado con exito!")
 def tree(path_option, id_option_wc, ruta_option, list_mount):
     print("generacion de reporte tree...")
@@ -458,6 +496,7 @@ def tree(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
+       estado.mensaje= "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
        return
     
@@ -504,9 +543,15 @@ def tree(path_option, id_option_wc, ruta_option, list_mount):
             #acceder a superblock
             f.write(text)
             f.close()
-            
-            subprocess.run(["dot", "-Tpdf", 'reportetree.dot', "-o", path_option])
+            archivo_jpg = getFileName(path_option)
+            subprocess.run(["dot", "-Tjpg", 'reportetree.dot', "-o", archivo_jpg])
+            s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+
+            # Sube el archivo al bucket
+            s3.upload_file(archivo_jpg, bucket_name, archivo_jpg)
             textTree = ""
+            estado.reportname = archivo_jpg
+            estado.mensaje = "¡Reporte tree generado con exito!"
             print("¡Reporte tree generado con exito!")
 #inodo->archivodsk, inicio particion, numero de inodo, inicio de inodos, padre, inicio de bloques, archivo graphviz
 def codeInode(file, start, numero_inodo, start_inodos, principal, start_bloques, f):
@@ -702,6 +747,7 @@ def sb(path_option, id_option_wc, ruta_option, list_mount):
             Found=True
     
     if(Found==False):
+       estado.mensaje = "ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion"
        print("ERROR: El id ingresado no se encuentra en ningun disk o no esta montada la particion")
        return
     
@@ -756,9 +802,17 @@ def sb(path_option, id_option_wc, ruta_option, list_mount):
 
             f.write(text)
             f.close()
-            
-            subprocess.run(["dot", "-Tpdf", 'reportesb.dot', "-o", path_option])
-            print("¡Reporte SB generado con exito!")
+            archivo_jpg = getFileName(path_option)
+            subprocess.run(["dot", "-Tjpg", 'reportesb.dot', "-o", archivo_jpg])
+            print("1")
+            s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+            print("2")
+
+            s3.upload_file(archivo_jpg, 'lestherlopez', archivo_jpg)
+            print("3")
+            estado.mensaje = "¡Reporte sb generado con exito!"
+            estado.reportname = archivo_jpg
+            print("¡Reporte sb generado con exito!")
    
 def file():
     print("file")
@@ -769,5 +823,7 @@ def verify_path(path):
     if not os.path.exists(directorio):
         os.makedirs(directorio)
 
-def getFile():
-    print("get file")
+def getFileName(ruta_absoluta):
+  
+    nombre_archivo = os.path.basename(ruta_absoluta)
+    return nombre_archivo
